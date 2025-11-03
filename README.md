@@ -1,4 +1,4 @@
-# 🎬 DeepVideo — Random Short Video Rating App
+# 🎬 RealOrCake — Random Short Video Rating App
 ---
 
 ## Getting Started
@@ -6,8 +6,8 @@
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone https://github.com/Szlesniak/DeepVideo.git
-cd DeepVideo
+git clone https://github.com/Pymek11/RealOrCake.git
+cd RealOrCake
 ```
 
 ### 2️⃣ Install dependencies

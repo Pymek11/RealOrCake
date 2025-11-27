@@ -6,13 +6,17 @@ input_folder = "videos/videos_watermark_rm/videos"
 cropped_output_folder = "videos/videos_watermark_rm/videos_cut"
 processed_originals_folder = "videos/videos_watermark_rm/videos2"
 
-if not os.listdir(input_folder):
+if not os.path.exists(input_folder) or not os.listdir(input_folder):
     input_folder = "videos/videos_watermark_rm/videos2"
     processed_originals_folder = "videos/videos_watermark_rm/videos"
 
+os.makedirs(cropped_output_folder, exist_ok=True)
+os.makedirs(processed_originals_folder, exist_ok=True)
+
 crop_left = 0
-crop_right = 100
-crop_bottom = 70
+crop_right = 0
+crop_top = 0
+crop_bottom = 0
 
 video_files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.mp4', '.avi', '.mov', '.mkv'))]
 
@@ -38,7 +42,7 @@ else:
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         new_width = width - crop_left - crop_right
-        new_height = height - crop_bottom
+        new_height = height - crop_top - crop_bottom
 
         if new_width <= 0 or new_height <= 0:
             print(f"ERROR: Crop dimensions are larger than the video size for {video_file}. Skipping.")
@@ -53,14 +57,19 @@ else:
             ret, frame = cap.read()
             if not ret:
                 break
-            cropped = frame[0:new_height, crop_left:width - crop_right]
+            cropped = frame[crop_top:height - crop_bottom, crop_left:width - crop_right]
             out.write(cropped)
 
         cap.release()
         out.release()
 
         print(f"Saved cropped video to '{cropped_video_path}'")
-
+        
+        # Original prints moved inside the loop to run for every video
+        print("16:9 aspect ratio = " + str(16 / 9))
+        print("your videos aspect ratio = " + str(new_width / new_height))
+        print("percentage of difference = " + str(round(abs((new_width / new_height) - (16 / 9)) / (16 / 9) * 100, 2)) + "%")
+        
         try:
             shutil.move(input_path, processed_original_path)
             print(f"Moved original file to '{processed_original_path}'\n")

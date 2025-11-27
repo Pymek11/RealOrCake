@@ -64,8 +64,6 @@ else:
         out.release()
 
         print(f"Saved cropped video to '{cropped_video_path}'")
-        
-        # Original prints moved inside the loop to run for every video
         print("16:9 aspect ratio = " + str(16 / 9))
         print("your videos aspect ratio = " + str(new_width / new_height))
         print("percentage of difference = " + str(round(abs((new_width / new_height) - (16 / 9)) / (16 / 9) * 100, 2)) + "%")

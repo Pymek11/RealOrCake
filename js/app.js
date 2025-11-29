@@ -59,6 +59,7 @@ async function onRate(value) {
 
 function nextVideo() {
 	currentIndex++;
+	videoEl.style.opacity = '1';
 	if (currentIndex >= videos.length) {
 		showDone();
 		return;
@@ -123,23 +124,25 @@ startBtn.addEventListener("click", async () => {
 });
 
 // if user wants to return to start from thanks screen, reload the page
-restartBtn.addEventListener("click", () => {
-	try { videoEl.pause(); } catch (e) {}
-	videoEl.src = "";
-	currentIndex = 0;
-	thanksScreen.classList.add("hidden");
-	playerCard.classList.add("hidden");
-	// reload to restore start screen
-	window.location.reload();
-});
+if (restartBtn) {
+	restartBtn.addEventListener("click", () => {
+		try { videoEl.pause(); } catch (e) {}
+		videoEl.src = "";
+		currentIndex = 0;
+		thanksScreen.classList.add("hidden");
+		playerCard.classList.add("hidden");
+		// reload to restore start screen
+		window.location.reload();
+	});
+}
 
 // If video ends without rating (we loop), provide a fallback: after many loops advance automatically
 // Prevent user from pausing, seeking or using context menu / keyboard shortcuts
-let lastSafeTime = 0;
-videoEl.addEventListener("timeupdate", () => {
+//let lastSafeTime = 0;
+//videoEl.addEventListener("timeupdate", () => {
 	// track the last safe playback time so we can prevent seeking
-	if (!isNaN(videoEl.currentTime)) lastSafeTime = videoEl.currentTime;
-});
+//	if (!isNaN(videoEl.currentTime)) lastSafeTime = videoEl.currentTime;
+//});
 
 videoEl.addEventListener("seeking", () => {
 	// revert any user attempt to seek back to the last known time
@@ -152,22 +155,25 @@ videoEl.addEventListener("seeking", () => {
 	}
 });
 
-videoEl.addEventListener("pause", () => {
+///videoEl.addEventListener("pause", () => {
 	// if the video was paused before it ended, resume playback
-	if (!videoEl.ended) {
-		videoEl.play().catch(() => {});
-	}
-});
+	//if (!videoEl.ended) {
+//		videoEl.play().catch(() => {});
+//	}
+//});
 
 videoEl.addEventListener("contextmenu", (e) => e.preventDefault());
 videoEl.addEventListener("dblclick", (e) => e.preventDefault());
 
-// When playback finishes, hide the video so the last frame is not left visible
+// When playback finishes, fade to black and pause. Keep paused until user rates.
 videoEl.addEventListener('ended', () => {
 	try {
-		// hide the video element (use display so the background color shows through)
-		videoEl.style.display = 'none';
+		videoEl.pause();
+		videoEl.style.opacity = '0';
 	} catch (e) { }
+	try {
+		videoEl.style.transition = 'opacity 240ms ease';
+	} catch (e) {}
 });
 
 // block common keys that can control playback (space, arrow keys, media keys)

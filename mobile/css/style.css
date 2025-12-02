@@ -22,6 +22,9 @@ video{width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:1;tran
 .label.left{left:12px;background:rgba(34,139,34,0.9);transform:translateX(-6px)}
 .label.right{right:12px;background:rgba(200,30,30,0.9);transform:translateX(6px)}
 .controls{display:flex;gap:12px}
+
+/* when controls are locked we hide them and prevent interaction */
+.controls.locked{display:none !important}
 .choice{flex:1;padding:16px;border-radius:12px;border:none;font-size:18px;font-weight:800;color:var(--text);background:#151a1d}
 .choice.left{background:linear-gradient(180deg,#23332b,#1b2a23)}
 .choice.right{background:linear-gradient(180deg,#341b1b,#261414)}

@@ -58,14 +58,19 @@ app.get("/api/videos", (req, res) => {
 
 // Receive rating for a video and append to data/rating.log
 app.post("/api/rate", (req, res) => {
-  const { videoId, rating } = req.body;
+  // Accept rating submissions that may also include a certainty (1-5) and a userId
+  const { videoId, rating, certainty, userId } = req.body;
   if (!videoId || typeof rating === "undefined") {
     return res.status(400).json({ message: "Missing data" });
   }
 
   try {
     mkdirSync("./data", { recursive: true });
-    const logLine = `${new Date().toISOString()} | Video: ${videoId} | Rating: ${rating}\n`;
+    // Build a flexible log line so we can record certainty and optionally userId
+    const parts = [`${new Date().toISOString()}`, `Video: ${videoId}`, `Rating: ${rating}`];
+    if (typeof certainty !== 'undefined') parts.push(`Certainty: ${certainty}`);
+    if (userId) parts.push(`User: ${userId}`);
+    const logLine = parts.join(' | ') + '\n';
     appendFileSync("./data/rating.log", logLine);
     res.json({ message: "Rating saved" });
   } catch (err) {

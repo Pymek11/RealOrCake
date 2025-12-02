@@ -9,6 +9,33 @@ const doneEl = document.getElementById('done');
 let videos = [];
 let currentIndex = 0;
 let currentUserId = null;
+let pendingPrimaryMobile = null; // store primary choice until certainty is selected
+const RATING_SHOW_DELAY = 500;
+let ratingLockedMobile = false;
+
+function lockMobileUI() {
+  ratingLockedMobile = true;
+  try {
+    const controls = document.querySelector('.controls');
+    if (controls) controls.classList.add('locked');
+    for (const b of document.querySelectorAll('.controls button')) {
+      b.disabled = true;
+      b.hidden = true;
+    }
+  } catch (e) {}
+}
+
+function unlockMobileUI() {
+  ratingLockedMobile = false;
+  try {
+    const controls = document.querySelector('.controls');
+    if (controls) controls.classList.remove('locked');
+    for (const b of document.querySelectorAll('.controls button')) {
+      b.disabled = false;
+      b.hidden = false;
+    }
+  } catch (e) {}
+}
 
 async function createUser(){
   try{
@@ -27,7 +54,7 @@ function loadCurrent(){
   if(!videos || currentIndex>=videos.length){ showDone(); return }
   const filename = videos[currentIndex];
   // ensure video is visible when loading
-  try { videoEl.style.visibility = 'visible'; videoEl.style.display = ''; } catch (e) {}
+  try { videoEl.style.visibility = 'visible'; videoEl.style.display = ''; videoEl.style.opacity = '1'; } catch (e) {}
   // ensure card is visible (remove hidden if present)
   try { card.classList.remove('hidden'); } catch (e) {}
   videoEl.src = `/videos/${encodeURI(filename)}`;
@@ -43,10 +70,11 @@ function showDone(){
   doneEl.classList.remove('hidden');
 }
 
-async function submitRating(rating){
+async function submitRating(rating, certainty){
   const filename = videos[currentIndex];
   try{
-    await fetch('/api/rate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({videoId:filename,rating,userId:currentUserId})});
+    // If certainty is provided, include it in the payload
+    await fetch('/api/rate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({videoId:filename,rating,certainty,userId:currentUserId})});
   }catch(e){console.warn('rate failed',e)}
 }
 
@@ -58,18 +86,84 @@ function animateChoice(dir){
   }
 }
 
+function buildCertaintyButtonsMobile() {
+  // replace controls with 1..5 certainty buttons
+  const controls = document.querySelector('.controls');
+  controls.innerHTML = '';
+  const prompt = document.createElement('div');
+  prompt.className = 'certainty-prompt';
+  prompt.textContent = 'How certain are you?';
+  controls.appendChild(prompt);
+  for (let i = 1; i <= 5; i++) {
+    const b = document.createElement('button');
+    b.className = 'choice certainty';
+    b.textContent = String(i);
+    if (ratingLockedMobile) b.disabled = true;
+    b.addEventListener('click', async () => {
+      // submit both primary and certainty
+      if (!pendingPrimaryMobile || ratingLockedMobile) return;
+      // lock UI so additional taps are ignored while we pause
+      lockMobileUI();
+      await submitRating(pendingPrimaryMobile, i);
+      // restore controls to original buttons and advance
+      pendingPrimaryMobile = null;
+      restoreChoiceButtons();
+      // ensure restored controls also get locked (buttons created by restoreChoiceButtons are new)
+      lockMobileUI();
+      nextVideoMobile();
+    });
+    controls.appendChild(b);
+  }
+}
+
+function nextVideoMobile() {
+  currentIndex++;
+  if (currentIndex >= videos.length) {
+    showDone();
+    return;
+  }
+
+  setTimeout(() => {
+    try { videoEl.style.opacity = '1'; } catch (e) {}
+    // unlock inputs again when next video appears
+    unlockMobileUI();
+    loadCurrent();
+  }, RATING_SHOW_DELAY);
+}
+
+function restoreChoiceButtons(){
+  const controls = document.querySelector('.controls');
+  controls.innerHTML = '';
+  const left = document.createElement('button');
+  left.id = 'choose-left'; left.className = 'choice left'; left.textContent = 'REAL';
+  const right = document.createElement('button');
+  right.id = 'choose-right'; right.className = 'choice right'; right.textContent = 'AI';
+  left.addEventListener('click', ()=> { if (!ratingLockedMobile) choose('left') });
+  right.addEventListener('click', ()=> { if (!ratingLockedMobile) choose('right') });
+  // reflect locked state on newly created controls
+  try { left.disabled = ratingLockedMobile; right.disabled = ratingLockedMobile; left.hidden = ratingLockedMobile; right.hidden = ratingLockedMobile; } catch (e) {}
+  controls.appendChild(left);
+  controls.appendChild(right);
+}
+
 async function choose(dir){
+  if (ratingLockedMobile) return; // ignore gestures/clicks while locked
   if(!videos || currentIndex>=videos.length) return;
   const rating = dir === 'left' ? 5 : 1; // left=real(5), right=ai(1)
+  pendingPrimaryMobile = rating;
+  // show animation then present certainty choices
   animateChoice(dir);
-  await submitRating(rating);
-  // wait for animation then advance
-  setTimeout(()=>{ currentIndex++; loadCurrent(); }, 320);
+  setTimeout(()=>{
+    // reset swipe classes to keep the card in place
+    card.classList.remove('swipe-left','swipe-right');
+    leftLabel.style.opacity = 0; rightLabel.style.opacity = 0;
+    buildCertaintyButtonsMobile();
+  }, 320);
 }
 
 // touch handling for swipe gestures
 let startX = 0; let isTouching = false;
-card.addEventListener('touchstart', e=>{ isTouching=true; startX = e.touches[0].clientX });
+card.addEventListener('touchstart', e=>{ if (ratingLockedMobile) return; isTouching=true; startX = e.touches[0].clientX });
 card.addEventListener('touchmove', e=>{
   if(!isTouching) return;
   const dx = e.touches[0].clientX - startX;
@@ -89,6 +183,7 @@ card.addEventListener('touchend', e=>{
 // mouse drag support (for desktop testing)
 let isDraggingMouse = false;
 card.addEventListener('mousedown', e => {
+  if (ratingLockedMobile) return;
   isDraggingMouse = true;
   startX = e.clientX;
   e.preventDefault();
@@ -111,30 +206,28 @@ document.addEventListener('mouseup', e => {
 });
 
 // click buttons
-leftBtn.addEventListener('click', ()=> choose('left'));
-rightBtn.addEventListener('click', ()=> choose('right'));
+leftBtn.addEventListener('click', ()=> { if (!ratingLockedMobile) choose('left') });
+rightBtn.addEventListener('click', ()=> { if (!ratingLockedMobile) choose('right') });
 
 // hide video when playback completes so the last frozen frame isn't visible
 videoEl.addEventListener('ended', () => {
   try {
-    // fade the video out to black, then clear the src so no frozen frame remains
+    // pause and fade to black — keep the element present until the user submits certainty
     videoEl.pause();
-    // ensure transition is set (CSS also provides it)
     try { videoEl.style.transition = 'opacity 240ms ease'; } catch (e) {}
     try { videoEl.style.opacity = '0'; } catch (e) {}
-    // after transition finishes, remove src/poster and hide the element
-    setTimeout(() => {
-      try { videoEl.removeAttribute('src'); } catch (e) {}
-      try { videoEl.removeAttribute('poster'); } catch (e) {}
-      try { videoEl.load(); } catch (e) {}
-      try { videoEl.style.display = 'none'; } catch (e) {}
-      // reset opacity so the next video can fade in normally
-      try { videoEl.style.opacity = '1'; } catch (e) {}
-    }, 260);
-    // keep the card visible so the user can still rate the item
-    // reset labels so they don't remain visible
+    // keep the card visible so the user can still rate the item; clear labels
     leftLabel.style.opacity = 0; rightLabel.style.opacity = 0;
   } catch (e) {}
+  // If nothing happens, ensure the primary rating controls reappear after a short delay
+  setTimeout(() => {
+    try {
+      const controls = document.querySelector('.controls');
+      if (!pendingPrimaryMobile && controls && !controls.querySelector('button')) {
+        restoreChoiceButtons();
+      }
+    } catch (e) {}
+  }, 500);
 });
 
 // startup

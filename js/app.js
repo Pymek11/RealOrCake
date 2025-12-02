@@ -9,7 +9,23 @@ const startBtn = document.getElementById("start-btn");
 
 let videos = [];
 let currentIndex = 0;
+let pendingPrimary = null; // temporarily store primary choice ('ai' or 'real') until certainty is given
+const RATING_SHOW_DELAY = 500;
+let ratingLocked = false; // prevent inputs while a gap is in progress
 
+function lockRatingUI() {
+	ratingLocked = true;
+	try {
+		for (const b of ratingButtonsRow.querySelectorAll('button')) b.disabled = true, b.hidden = true;
+	} catch (e) {}
+}
+
+function unlockRatingUI() {
+	ratingLocked = false;
+	try {
+		for (const b of ratingButtonsRow.querySelectorAll('button')) b.disabled = false, b.hidden = false;
+	} catch (e) {}
+}
 async function fetchVideos() {
 	try {
 		const res = await fetch("/api/videos");
@@ -27,14 +43,72 @@ function buildRatingButtons() {
 	const aiBtn = document.createElement("button");
 	aiBtn.className = "rate-btn rate-ai";
 	aiBtn.textContent = "AI";
-	aiBtn.addEventListener("click", () => onRate('ai'));
+	aiBtn.addEventListener("click", () => { if (!ratingLocked) initiatePrimaryRating('ai'); });
+	if (ratingLocked) aiBtn.disabled = true;
 	ratingButtonsRow.appendChild(aiBtn);
 
 	const realBtn = document.createElement("button");
 	realBtn.className = "rate-btn rate-real";
 	realBtn.textContent = "REAL";
-	realBtn.addEventListener("click", () => onRate('real'));
+	realBtn.addEventListener("click", () => { if (!ratingLocked) initiatePrimaryRating('real'); });
+	if (ratingLocked) realBtn.disabled = true;
 	ratingButtonsRow.appendChild(realBtn);
+}
+
+function buildCertaintyButtons() {
+	// replace rating row with certainty choices 1..5
+	ratingButtonsRow.innerHTML = "";
+	const prompt = document.getElementById('rating-prompt');
+	if (prompt) prompt.textContent = 'How certain are you? (1 = not sure, 5 = very sure)';
+
+	for (let i = 1; i <= 5; i++) {
+		const b = document.createElement('button');
+		b.className = 'rate-btn certainty-btn';
+		b.textContent = String(i);
+		b.addEventListener('click', () => { if (!ratingLocked) submitFullRating(i); });
+		if (ratingLocked) b.disabled = true;
+		ratingButtonsRow.appendChild(b);
+	}
+}
+
+function resetPrimaryButtons() {
+	const prompt = document.getElementById('rating-prompt');
+	if (prompt) prompt.textContent = 'Oceń ten materiał — czy jest realny czy AI';
+	buildRatingButtons();
+}
+
+function initiatePrimaryRating(choice) {
+	// user clicked AI/REAL — store and prompt for certainty
+	if (ratingLocked) return;
+	pendingPrimary = choice;
+	// visually lock primary buttons
+	// build certainty UI (1..5)
+	buildCertaintyButtons();
+}
+
+async function submitFullRating(certaintyValue) {
+	// pendingPrimary should be set
+	if (!pendingPrimary) return console.warn('No primary rating selected');
+	const filename = videos[currentIndex];
+	try {
+		let ratingToSend = pendingPrimary;
+		if (pendingPrimary === 'ai') ratingToSend = 1;
+		if (pendingPrimary === 'real') ratingToSend = 5;
+		await fetch('/api/rate', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ videoId: filename, rating: ratingToSend, certainty: certaintyValue, userId: currentUserId }),
+		});
+	} catch (err) {
+		console.error('Failed to send rating', err);
+	}
+
+	// reset state and move to next
+	pendingPrimary = null;
+	resetPrimaryButtons();
+	// lock input to prevent accidental clicks while we pause and transition
+	lockRatingUI();
+	nextVideo();
 }
 
 
@@ -59,13 +133,19 @@ async function onRate(value) {
 
 function nextVideo() {
 	currentIndex++;
-	videoEl.style.opacity = '1';
+	// keep the last-frame / black gap visible briefly so the user has a small pause
+	// before the next video appears
 	if (currentIndex >= videos.length) {
 		showDone();
 		return;
 	}
 
-	loadCurrent();
+	setTimeout(() => {
+		try { videoEl.style.opacity = '1'; } catch (e) {}
+		// unlock inputs shortly before/after the new video appears
+		unlockRatingUI();
+		loadCurrent();
+	}, 500);
 }
 
 function showThanks() {
@@ -174,6 +254,12 @@ videoEl.addEventListener('ended', () => {
 	try {
 		videoEl.style.transition = 'opacity 240ms ease';
 	} catch (e) {}
+	// ensure rating buttons are visible after a short delay if user didn't interact
+	setTimeout(() => {
+		try {
+			if (!pendingPrimary) resetPrimaryButtons();
+		} catch (e) {}
+	}, RATING_SHOW_DELAY);
 });
 
 // block common keys that can control playback (space, arrow keys, media keys)

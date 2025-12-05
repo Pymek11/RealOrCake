@@ -14,11 +14,42 @@
     <main class="player-area">
       <div id="start-screen">
         <div class="start-card">
-          <h2>Witaj — przygotuj się do testu</h2>
-          <p>Przedstawione zostanie Ci 20 filmów — każdy trwa 5 sekund. Oceniaj realność każdego filmu w skali od 1 (AI) do 5 (REAL).</p>
-          <p>Każdy film obejrzysz tylko jeden raz. Nie da się zapauzować ani przewinąć. Na koniec zostanie wygaszony</p>
-          <p>Po kliknięciu "Zacznij test" rozpoczniesz sesję testową i każde Twoje ocenienie zostanie zapisane.</p>
-          <button id="start-btn" class="rate-btn">Zacznij test</button>
+          <h2>Witamy w Badaniu Oceny Realizmu Materiałów Wideo <br> (AI vs Rzeczywistość)</h2>
+          <hr>
+          <p>Zostanie Ci przedstawionych <strong>20 krótkich klipów wideo</strong> (każdy trwa 5 sekund).</li>
+          <p>Twoim zadaniem jest ocena <strong>realności każdego filmu</strong> w skali od 1 do 5:</li>
+            <p><strong>1</strong> Film stworzony przez sztuczną inteligencję (AI).</li>
+            <p><strong>5</strong> Film jest rzeczywistym nagraniem (REAL).</li>
+          <p>Każdy film zostanie wyświetlony tylko <strong>jeden raz</strong>.</li>
+          <p><strong>Ważne:</strong> Odtwarzania nie można pauzować ani przewijać. Upewnij się, że jesteś gotów, zanim klikniesz przycisk start.</li>
+          <p><strong>W przypadku urządzeń mobilnych zalecamy orientację pionową.</strong></p>
+          <hr>
+          <button id="practice-btn" class="rate-btn">Rozpocznij badanie</button>
+        </div>
+      </div>
+
+      <div id="practice-screen" class="hidden">
+        <div class="practice-card">
+          <h2>Test praktyczny</h2>
+          <p>Poniżej zobaczysz przykładowy film. Masz 5 sekund na obejrzenie.</p>
+          <p>Po zakończeniu filmu wybierz ocenę od 1 (AI) do 5 (REAL).</p>
+          <p>To jest jedynie ćwiczenie — Twoja ocena nie będzie zapisana.</p>
+          <p>W prawdziwym teście będziesz mógł ocenić filmik w każdym momencie.</p>
+        </div>
+        <div id="practice-player">
+          <button id="practice-start-btn" class="rate-btn">Rozpocznij test praktyczny</button>
+          <div id="practice-video-section" style="display:none;">
+            <div id="practice-video-wrapper">
+              <video id="practice-video" playsinline></video>
+            </div>
+            <div id="practice-video-info">
+              <h2 id="practice-video-title">Wczytywanie...</h2>
+            </div>
+            <div id="practice-rating-row">
+              <p id="practice-rating-prompt">Oceń materiał — skala 1 (AI) do 5 (REAL)</p>
+              <div id="practice-rating-buttons" aria-label="rating buttons"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -37,25 +68,18 @@
         </div>
       </div>
 
+      <div id="transition-screen" class="hidden">
+        <div class="transition-card">
+          <h2>Teraz przejdziemy do prawdziwego badania</h2>
+          <p>Przygotuj się na ocenę 20 filmów...</p>
+        </div>
+      </div>
+
       <div id="thanks-screen" class="hidden">
         <h2>Dziękujemy za oddanie głosów!</h2>
-        <!-- Restart button removed to keep flow focused after test -->
       </div>
     </main>
 
     <script type="module" src="js/app.js"></script>
-    <script>
-      // If the visitor is on a mobile device, redirect to the mobile start page
-      (function(){
-        try{
-          const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || navigator.vendor || '');
-          if(isMobile){
-            if(!location.pathname.startsWith('/mobile')){
-              location.replace('/mobile/start.html');
-            }
-          }
-        }catch(e){/* ignore */}
-      })();
-    </script>
   </body>
 </html>

@@ -3,79 +3,71 @@ const titleEl = document.getElementById("video-title");
 const ratingButtonsRow = document.getElementById("rating-buttons");
 const thanksScreen = document.getElementById("thanks-screen");
 const playerCard = document.getElementById("player-card");
-const restartBtn = document.getElementById("restart");
 const startScreen = document.getElementById("start-screen");
-const startBtn = document.getElementById("start-btn");
+const practiceScreen = document.getElementById("practice-screen");
+const practiceCardDiv = document.querySelector(".practice-card");
+const practiceVideoEl = document.getElementById("practice-video");
+const practiceTitleEl = document.getElementById("practice-video-title");
+const practiceRatingButtonsRow = document.getElementById("practice-rating-buttons");
+const practicePlayerDiv = document.getElementById("practice-player");
+const practiceBtnEl = document.getElementById("practice-btn");
+const practiceStartBtnEl = document.getElementById("practice-start-btn");
+const practiceVideoSectionEl = document.getElementById("practice-video-section");
 
 let videos = [];
+let practiceVideos = [];
 let currentIndex = 0;
-let pendingPrimary = null; // temporarily store primary choice ('ai' or 'real') until certainty is given
+let isTestPhase = false;
 const RATING_SHOW_DELAY = 500;
-let ratingLocked = false; // prevent inputs while a gap is in progress
-let currentUserId = null; // przechowuje identyfikator użytkownika
-let currentUserHash = null; // hex hash for user (returned from server)
+let ratingLocked = false;
+let currentUUID = null;
 
-async function createUserDesktop(){
+async function createUser(){
 	try{
-		// sprawdź najpierw localStorage
-		const storedId = localStorage.getItem('roc_userId');
-		const storedHash = localStorage.getItem('roc_userHash');
-		// ensure a persistent path hash exists for this client (only generated once)
-		let pathHash = localStorage.getItem('roc_pathHash');
-		// If a userHash is present in the URL (query param or fragment), prefer that
-		let urlUserHash = null;
-		try { const u = new URL(window.location); urlUserHash = u.searchParams.get('userHash') || (u.hash ? u.hash.replace(/^#/, '') : null); } catch (e) {}
-		if (!pathHash && urlUserHash) {
-			pathHash = urlUserHash;
-			localStorage.setItem('roc_pathHash', pathHash);
-		}
-		if (!pathHash) {
-			pathHash = Math.random().toString(36).substring(2, 10);
-			localStorage.setItem('roc_pathHash', pathHash);
-		}
-		// set URL fragment once (preserve search params). Use hash instead
-		// of changing the pathname so a page refresh won't trigger a server
-		// GET for /<hash> (which caused "Cannot GET /myhash" errors).
-		try {
-			const u = new URL(window.location);
-			u.hash = `#${pathHash}`;
-			history.replaceState({}, '', u);
-		} catch (e) {}
+		// Check if UUID is in URL
+		const urlParams = new URLSearchParams(window.location.search);
+		const uuidFromUrl = urlParams.get('UUID');
+		
+		const storedUUID = localStorage.getItem('roc_uuid');
 
-		if (storedId) {
-			currentUserId = storedId;
-			if (storedHash) {
-				currentUserHash = storedHash;
-				// add to URL without reloading
-				try { const u = new URL(window.location); u.searchParams.set('userHash', currentUserHash); history.replaceState({}, '', u); } catch (e) {}
-			}
-			return;
+		// If UUID in URL, use that; otherwise use stored UUID; otherwise generate new
+		if (uuidFromUrl) {
+			currentUUID = uuidFromUrl;
+			localStorage.setItem('roc_uuid', uuidFromUrl);
+		} else if (storedUUID) {
+			currentUUID = storedUUID;
+		} else {
+			// Generate new UUID
+			const res = await fetch('/api/user',{method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({})});
+			if(!res.ok) throw new Error('user create failed');
+			const data = await res.json();
+			currentUUID = data.uuid;
+			localStorage.setItem('roc_uuid', currentUUID);
 		}
-		const res = await fetch('/api/user',{method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ userHash: pathHash })});
-		if(!res.ok) throw new Error('user create failed');
-		const data = await res.json();
-		currentUserId = data.userId;
-		currentUserHash = data.userHash || null;
-		localStorage.setItem('roc_userId', currentUserId);
-		if (currentUserHash) localStorage.setItem('roc_userHash', currentUserHash);
-		// add userHash to address bar (no reload)
-		try { const u = new URL(window.location); if (currentUserHash) u.searchParams.set('userHash', currentUserHash); history.replaceState({}, '', u); } catch (e) {}
+		
+		console.log(`UUID: ${currentUUID}`);
 	}catch(e){
-		console.warn('Nie udało się utworzyć usera:', e);
+		console.warn('UUID creation failed:', e);
 	}
 }
 
 function lockRatingUI() {
 	ratingLocked = true;
 	try {
-		for (const b of ratingButtonsRow.querySelectorAll('button')) b.disabled = true, b.hidden = true;
+		for (const b of ratingButtonsRow.querySelectorAll('button')) {
+			b.disabled = true;
+			b.hidden = true;
+		}
 	} catch (e) {}
 }
 
 function unlockRatingUI() {
 	ratingLocked = false;
 	try {
-		for (const b of ratingButtonsRow.querySelectorAll('button')) b.disabled = false, b.hidden = false;
+		for (const b of ratingButtonsRow.querySelectorAll('button')) {
+			b.disabled = false;
+			b.hidden = false;
+		}
 	} catch (e) {}
 }
 async function fetchVideos() {
@@ -89,40 +81,68 @@ async function fetchVideos() {
 	}
 }
 
+async function fetchPracticeVideos() {
+	try {
+		const res = await fetch("/api/practice-videos");
+		if (!res.ok) throw new Error("Failed to load practice videos");
+		practiceVideos = await res.json();
+	} catch (err) {
+		console.error(err);
+		practiceVideos = [];
+	}
+}
+
 function buildRatingButtons() {
-	// now present a single-step 1..5 scale instead of AI/REAL then certainty
 	ratingButtonsRow.innerHTML = "";
-	const prompt = document.getElementById('rating-prompt');
-	if (prompt) prompt.textContent = 'Oceń materiał — skala 1 (AI) do 5 (REAL)';
 	for (let i = 1; i <= 5; i++) {
 		const b = document.createElement('button');
 		b.className = 'rate-btn scale-btn';
 		b.textContent = String(i);
-		b.addEventListener('click', () => { if (!ratingLocked) submitScaleRating(i); });
+		b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, false); });
 		if (ratingLocked) b.disabled = true;
 		ratingButtonsRow.appendChild(b);
 	}
 }
 
-// remove the two-step certainty flow; provide single submit function
-async function submitScaleRating(value) {
-	const filename = videos[currentIndex];
+function buildPracticeRatingButtons() {
+	practiceRatingButtonsRow.innerHTML = "";
+	for (let i = 1; i <= 5; i++) {
+		const b = document.createElement('button');
+		b.className = 'rate-btn scale-btn';
+		b.textContent = String(i);
+		b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, true); });
+		if (ratingLocked) b.disabled = true;
+		practiceRatingButtonsRow.appendChild(b);
+	}
+}
+
+async function submitRating(value, isPractice) {
+	const filename = isPractice ? practiceVideos[0] : videos[currentIndex];
 	try {
-		// include the persistent path hash (roc_pathHash) if available so ratings always carry the URL hash
-		const pathHash = localStorage.getItem('roc_pathHash');
-		const outgoingUserHash = pathHash || currentUserHash || null;
-		console.log('Sending rating ->', { video: filename, userId: currentUserId, outgoingUserHash });
-		await fetch('/api/rate', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ videoId: filename, rating: value, userId: currentUserId, userHash: outgoingUserHash }),
-		});
+		console.log('Sending rating ->', { video: filename, uuid: currentUUID, rating: value, isPractice });
+		
+		// Nie zapisuj practice testów
+		if (!isPractice) {
+			await fetch('/api/rate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ videoId: filename, rating: value, uuid: currentUUID }),
+			});
+		}
 	} catch (err) {
 		console.error('Failed to send rating', err);
 	}
 
-	// advance to next video
 	lockRatingUI();
+	
+	// Jeśli to practice, przejdź do pełnego testu
+	if (isPractice) {
+		setTimeout(() => {
+			continuToTest();
+		}, 1000);
+		return;
+	}
+	
 	currentIndex++;
 	if (currentIndex >= videos.length) {
 		showThanks();
@@ -135,112 +155,107 @@ async function submitScaleRating(value) {
 	}, RATING_SHOW_DELAY);
 }
 
-function resetPrimaryButtons() {
-	// keep a simple method to rebuild the 1..5 controls
-	const prompt = document.getElementById('rating-prompt');
-	if (prompt) prompt.textContent = 'Oceń materiał — skala 1 (AI) do 5 (REAL)';
-	buildRatingButtons();
-}
-
 function showThanks() {
 	playerCard.classList.add("hidden");
 	thanksScreen.classList.remove("hidden");
 }
 
-// Desktop version of mobile's showDone: hide player, disable rating buttons and show thanks
-
-function showDone(){
-  card.classList.add('hidden');
-  leftBtn.disabled = true; rightBtn.disabled = true;
-  doneEl.classList.remove('hidden');
-}
-
-
-function reset() {
-	currentIndex = 0;
-	thanksScreen.classList.add("hidden");
-	playerCard.classList.remove("hidden");
-	loadCurrent();
-}
-
 function loadCurrent() {
 	const filename = videos[currentIndex];
 	if (!filename) return;
-	// title is intentionally hidden in CSS; no visible filename shown
-	// ensure video element is visible and ready when loading a new file
 	try { videoEl.style.visibility = 'visible'; videoEl.style.display = ''; } catch (e) {}
-	// filename may include subfolders; use encodeURI so slashes are preserved
 	videoEl.src = `videos/${encodeURI(filename)}`;
-	// ensure user cannot control playback via native controls
 	videoEl.controls = false;
-	// do not loop: when video ends, leave it on the last frame
 	videoEl.loop = false;
-	// start playback programmatically
+	titleEl.textContent = filename;
+	
+	// W prawdziwym badaniu przyciski oceny są zawsze widoczne
+	ratingButtonsRow.style.display = 'flex';
+	unlockRatingUI(); // Odblokuj przyciski
+	ratingLocked = false;
+	
+	videoEl.onended = () => {
+		// W prawdziwym badaniu nic się nie zmienia po skończeniu wideo
+	};
+	
 	videoEl.play().catch(() => {});
 }
 
-async function start() {
-	await createUserDesktop();
-	await fetchVideos();
-	if (!videos || videos.length === 0) {
-		titleEl.textContent = "Brak dostępnych filmów w katalogu /videos";
+function loadPracticeVideo() {
+	if (!practiceVideos || practiceVideos.length === 0) return;
+	const filename = practiceVideos[0];
+	try { practiceVideoEl.style.visibility = 'visible'; practiceVideoEl.style.display = ''; } catch (e) {}
+	practiceVideoEl.src = `video_test/${encodeURI(filename)}`;
+	practiceVideoEl.controls = false;
+	practiceVideoEl.loop = false;
+	practiceTitleEl.textContent = filename;
+	
+	// Show rating buttons when video ends (after 5 seconds)
+	practiceVideoEl.onended = () => {
+		setTimeout(() => {
+			practiceRatingButtonsRow.style.display = 'flex';
+			ratingLocked = false;
+		}, RATING_SHOW_DELAY);
+	};
+	
+	practiceVideoEl.play().catch(() => {});
+}
+
+// Przycisk do testu praktycznego
+practiceBtnEl?.addEventListener("click", async () => {
+	try { startScreen.remove(); } catch (e) {}
+	practiceScreen.classList.remove("hidden");
+	practiceCardDiv.classList.add("show");
+	practicePlayerDiv.classList.add("show");
+	await createUser();
+	await fetchPracticeVideos();
+	
+	if (!practiceVideos || practiceVideos.length === 0) {
+		practiceTitleEl.textContent = "Brak dostępnych filmów w katalogu /video_test";
 		return;
 	}
-	buildRatingButtons();
-	loadCurrent();
-}
-
-// Start button: hide start screen, show player, begin test
-startBtn.addEventListener("click", async () => {
-	// remove the entire start screen from DOM so it won't be shown again
-	try { startScreen.remove(); } catch (e) {}
-	playerCard.classList.remove("hidden");
-	await start();
+	
+	// Weź jeden losowy film do practice
+	practiceVideos = [practiceVideos[Math.floor(Math.random() * practiceVideos.length)]];
+	buildPracticeRatingButtons();
 });
 
-// if user wants to return to start from thanks screen, reload the page
-if (restartBtn) {
-	restartBtn.addEventListener("click", () => {
-		try { videoEl.pause(); } catch (e) {}
-		videoEl.src = "";
+// Przycisk rozpoczęcia testu praktycznego
+practiceStartBtnEl?.addEventListener("click", () => {
+	practiceStartBtnEl.style.display = "none";
+	practiceVideoSectionEl.style.display = "block";
+	loadPracticeVideo();
+});
+
+// Event listener na koniec practice video
+practiceVideoEl?.addEventListener('ended', () => {
+	try { practiceVideoEl.style.opacity = '0'; } catch (e) {}
+	try { practiceVideoEl.style.transition = 'opacity 240ms ease'; } catch (e) {}
+});
+
+// Przejście do pełnego testu po ocenie practice
+function continuToTest() {
+	practiceScreen.remove();
+	
+	// Pokaż ekran przejściowy
+	const transitionScreen = document.getElementById("transition-screen");
+	transitionScreen.classList.remove("hidden");
+	
+	// Po 3 sekundach przejdź do głównego testu
+	setTimeout(async () => {
+		await fetchVideos();
+		transitionScreen.remove();
+		playerCard.classList.remove("hidden");
 		currentIndex = 0;
-		thanksScreen.classList.add("hidden");
-		playerCard.classList.add("hidden");
-		// reload to restore start screen
-		window.location.reload();
-	});
+		isTestPhase = true;
+		buildRatingButtons();
+		loadCurrent();
+	}, 3000);
 }
-
-// If video ends without rating (we loop), provide a fallback: after many loops advance automatically
-// Prevent user from pausing, seeking or using context menu / keyboard shortcuts
-//let lastSafeTime = 0;
-//videoEl.addEventListener("timeupdate", () => {
-	// track the last safe playback time so we can prevent seeking
-//	if (!isNaN(videoEl.currentTime)) lastSafeTime = videoEl.currentTime;
-//});
-
-videoEl.addEventListener("seeking", () => {
-	// revert any user attempt to seek back to the last known time
-	try {
-		if (Math.abs(videoEl.currentTime - lastSafeTime) > 0.1) {
-			videoEl.currentTime = lastSafeTime;
-		}
-	} catch (e) {
-		// ignore
-	}
-});
-
-///videoEl.addEventListener("pause", () => {
-	// if the video was paused before it ended, resume playback
-	//if (!videoEl.ended) {
-//		videoEl.play().catch(() => {});
-//	}
-//});
 
 videoEl.addEventListener("contextmenu", (e) => e.preventDefault());
 videoEl.addEventListener("dblclick", (e) => e.preventDefault());
 
-// When playback finishes, fade to black and pause. Keep paused until user rates.
 videoEl.addEventListener('ended', () => {
 	try {
 		videoEl.pause();
@@ -251,7 +266,6 @@ videoEl.addEventListener('ended', () => {
 	} catch (e) {}
 });
 
-// block common keys that can control playback (space, arrow keys, media keys)
 window.addEventListener("keydown", (e) => {
 	const blocked = [" ", "Spacebar", "ArrowLeft", "ArrowRight", "MediaPlayPause", "k", "K"];
 	if (blocked.includes(e.key)) {
@@ -259,5 +273,3 @@ window.addEventListener("keydown", (e) => {
 		e.stopPropagation();
 	}
 });
-
-start();

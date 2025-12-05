@@ -1,4 +1,4 @@
-# DeepSzpont — Random Short Video Rating App
+# DeepSzpont — A study investigating the human ability to distinguish between authentic and AI-generated videos.
 
 DeepSzpont is a web application for testing persons perception.
 It focuses on the ability to differ from real videos to those 

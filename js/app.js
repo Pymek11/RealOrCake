@@ -34,7 +34,8 @@ let currentUUID = null;
 
 // Nowe ustawienia playlisty
 const NUM_TEST_VIDEOS = 20; // ile filmów pokazywać w teście (bez finalnej clipy)
-const LAST_VIDEO_FILENAME = 'VideoLast_Ai.mp4'; // plik odtwarzany jako ostatni (powinien znajdować się w katalogu /videos)
+const LAST_VIDEO_FILENAME = 'VideoLast_Ai.mp4'; // plik odtwarzany jako ostatni
+const LAST_VIDEO_DIR = 'video_last_test'; // katalog, w którym znajduje się finalny klip
 
 async function createUser(){
 	try{
@@ -133,15 +134,17 @@ function buildPracticeRatingButtons() {
 
 async function submitRating(value, isPractice) {
 	const filename = isPractice ? practiceVideos[0] : (videos[currentIndex] && videos[currentIndex].filename);
+	const item = !isPractice ? videos[currentIndex] : null;
+	const videoPath = isPractice ? (practiceVideos[0] || null) : (item ? `${item.dir}/${item.filename}` : null);
 	try {
-		console.log('Sending rating ->', { video: filename, uuid: currentUUID, rating: value, isPractice });
+		console.log('Sending rating ->', { video: videoPath, uuid: currentUUID, rating: value, isPractice });
 		
 		// Nie zapisuj practice testów
 		if (!isPractice) {
 			await fetch('/api/rate', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ videoId: filename, rating: value, uuid: currentUUID }),
+				body: JSON.stringify({ videoId: videoPath, rating: value, uuid: currentUUID }),
 			});
 		}
 	} catch (err) {
@@ -201,13 +204,13 @@ async function preparePlaylist(allVideos) {
 	shuffleArray(pool);
 	const count = Math.min(NUM_TEST_VIDEOS, pool.length);
 	const selected = pool.slice(0, count);
-	// Build videos array as objects
-	videos = selected.map(f => ({ filename: f, isFinal: false }));
+	// Build videos array as objects with directory info
+	videos = selected.map(f => ({ filename: f, dir: 'videos', isFinal: false }));
 	// Check if the designated last video exists on server and append as final entry
-	const finalUrl = `videos/${encodeURI(LAST_VIDEO_FILENAME)}`;
+	const finalUrl = `${LAST_VIDEO_DIR}/${encodeURI(LAST_VIDEO_FILENAME)}`;
 	if (await checkFileExists(finalUrl)) {
-		videos.push({ filename: LAST_VIDEO_FILENAME, isFinal: true });
-		console.log('Appended final video:', LAST_VIDEO_FILENAME);
+		videos.push({ filename: LAST_VIDEO_FILENAME, dir: LAST_VIDEO_DIR, isFinal: true });
+		console.log('Appended final video:', `${LAST_VIDEO_DIR}/${LAST_VIDEO_FILENAME}`);
 	} else {
 		console.log('Final video not found, skipping append:', finalUrl);
 	}
@@ -219,7 +222,7 @@ function loadCurrent() {
 	const filename = item.filename;
 	if (!filename) return;
 	try { videoEl.style.visibility = 'visible'; videoEl.style.display = ''; } catch (e) {}
-	videoEl.src = `videos/${encodeURI(filename)}`;
+	videoEl.src = `${item.dir}/${encodeURI(filename)}`;
 	videoEl.controls = false;
 	videoEl.loop = false;
 	
@@ -228,7 +231,18 @@ function loadCurrent() {
 		ratingButtonsRow.style.display = 'none';
 		titleEl.textContent = 'Dziękujemy — krótki film na zakończenie';
 		lockRatingUI();
-		videoEl.onended = () => {
+		videoEl.onended = async () => {
+			// Zarejestruj w DB odtworzenie finalnego klipu (bez oceny)
+			try {
+				const videoPath = `${item.dir}/${item.filename}`;
+				await fetch('/api/rate', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ videoId: videoPath, rating: null, uuid: currentUUID, final: true }),
+				});
+			} catch (e) {
+				console.warn('Failed to send final video record to server', e);
+			}
 			showThanks();
 		};
 		videoEl.play().catch(() => {});

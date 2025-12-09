@@ -202,6 +202,19 @@ body{
 	font-size:28px;
 }
 
+/* Disabled appearance for action buttons */
+.rate-btn[disabled]{
+	opacity: 0.5;
+	cursor: not-allowed;
+	filter: grayscale(50%);
+	pointer-events: none; /* dodatkowo blokuje interakcje */
+}
+
+/* Nie zmieniaj tła na hover gdy przycisk jest disabled */
+.rate-btn[disabled]:hover{
+	background: #1a2226;
+}
+
 /* Responsive adjustments for smaller screens */
 @media (max-width:768px){
 	.player-area{

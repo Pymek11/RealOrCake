@@ -24,7 +24,13 @@
           <p><strong>Ważne:</strong> Odtwarzania nie można pauzować ani przewijać. Upewnij się, że jesteś gotów, zanim klikniesz przycisk start.</li>
           <p><strong>W przypadku urządzeń mobilnych zalecamy orientację pionową.</strong></p>
           <hr>
-          <button id="practice-btn" class="rate-btn">Rozpocznij badanie</button>
+          <div class="start-controls" style="display:flex;gap:12px;align-items:center;">
+            <label for="consent-checkbox" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="consent-checkbox" />
+              <span>Czy zrozumiałeś cel testu?</span>
+            </label>
+            <button id="practice-btn" class="rate-btn" disabled>Rozpocznij badanie</button>
+          </div>
         </div>
       </div>
 

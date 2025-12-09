@@ -14,6 +14,16 @@ const practiceBtnEl = document.getElementById("practice-btn");
 const practiceStartBtnEl = document.getElementById("practice-start-btn");
 const practiceVideoSectionEl = document.getElementById("practice-video-section");
 
+// Checkbox zgody — odblokowuje przycisk startu
+const consentCheckbox = document.getElementById('consent-checkbox');
+if (consentCheckbox) {
+	// Ustaw stan przycisku zgodnie z checkboxem przy ładowaniu
+	try { practiceBtnEl.disabled = !consentCheckbox.checked; } catch (e) {}
+	consentCheckbox.addEventListener('change', () => {
+		try { practiceBtnEl.disabled = !consentCheckbox.checked; } catch (e) {}
+	});
+}
+
 let videos = [];
 let practiceVideos = [];
 let currentIndex = 0;

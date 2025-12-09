@@ -62,7 +62,7 @@ body{
 	display: flex;
 }
 
-.start-card, .practice-card, .transition-card{
+.start-card, .transition-card{
 	background:var(--card);
 	padding:28px;
 	border-radius:8px;
@@ -74,6 +74,13 @@ body{
 
 .practice-card {
 	display: none;
+	/* Make practice section plain text — no card visuals */
+	background: transparent;
+	padding: 0;
+	border-radius: 0;
+	box-shadow: none;
+	max-width: none;
+	text-align: center;
 }
 
 .practice-card.show {

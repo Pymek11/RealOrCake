@@ -24,13 +24,17 @@ if (consentCheckbox) {
 	});
 }
 
-let videos = [];
+let videos = []; // teraz przechowuje obiekty: { filename, isFinal }
 let practiceVideos = [];
 let currentIndex = 0;
 let isTestPhase = false;
 const RATING_SHOW_DELAY = 500;
 let ratingLocked = false;
 let currentUUID = null;
+
+// Nowe ustawienia playlisty
+const NUM_TEST_VIDEOS = 20; // ile filmów pokazywać w teście (bez finalnej clipy)
+const LAST_VIDEO_FILENAME = 'VideoLast_Ai.mp4'; // plik odtwarzany jako ostatni (powinien znajdować się w katalogu /videos)
 
 async function createUser(){
 	try{
@@ -84,7 +88,8 @@ async function fetchVideos() {
 	try {
 		const res = await fetch("/api/videos");
 		if (!res.ok) throw new Error("Failed to load videos");
-		videos = await res.json();
+		const all = await res.json();
+		await preparePlaylist(all);
 	} catch (err) {
 		console.error(err);
 		videos = [];
@@ -127,7 +132,7 @@ function buildPracticeRatingButtons() {
 }
 
 async function submitRating(value, isPractice) {
-	const filename = isPractice ? practiceVideos[0] : videos[currentIndex];
+	const filename = isPractice ? practiceVideos[0] : (videos[currentIndex] && videos[currentIndex].filename);
 	try {
 		console.log('Sending rating ->', { video: filename, uuid: currentUUID, rating: value, isPractice });
 		
@@ -154,6 +159,7 @@ async function submitRating(value, isPractice) {
 	}
 	
 	currentIndex++;
+	// Jeśli osiągnięto koniec (brak final video) — pokaż thanks
 	if (currentIndex >= videos.length) {
 		showThanks();
 		return;
@@ -170,16 +176,66 @@ function showThanks() {
 	thanksScreen.classList.remove("hidden");
 }
 
+function shuffleArray(a) {
+	for (let i = a.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[a[i], a[j]] = [a[j], a[i]];
+	}
+}
+
+async function checkFileExists(path) {
+	try {
+		const res = await fetch(path, { method: 'HEAD' });
+		return res.ok;
+	} catch (e) {
+		return false;
+	}
+}
+
+async function preparePlaylist(allVideos) {
+	// allVideos: array of filenames (strings) from server
+	let pool = Array.isArray(allVideos) ? allVideos.slice() : [];
+	// Remove any occurrences of the last video filename from pool to avoid duplication
+	pool = pool.filter(f => f !== LAST_VIDEO_FILENAME);
+	// Shuffle pool and take first NUM_TEST_VIDEOS (or fewer if not enough)
+	shuffleArray(pool);
+	const count = Math.min(NUM_TEST_VIDEOS, pool.length);
+	const selected = pool.slice(0, count);
+	// Build videos array as objects
+	videos = selected.map(f => ({ filename: f, isFinal: false }));
+	// Check if the designated last video exists on server and append as final entry
+	const finalUrl = `videos/${encodeURI(LAST_VIDEO_FILENAME)}`;
+	if (await checkFileExists(finalUrl)) {
+		videos.push({ filename: LAST_VIDEO_FILENAME, isFinal: true });
+		console.log('Appended final video:', LAST_VIDEO_FILENAME);
+	} else {
+		console.log('Final video not found, skipping append:', finalUrl);
+	}
+}
+
 function loadCurrent() {
-	const filename = videos[currentIndex];
+	const item = videos[currentIndex];
+	if (!item) return;
+	const filename = item.filename;
 	if (!filename) return;
 	try { videoEl.style.visibility = 'visible'; videoEl.style.display = ''; } catch (e) {}
 	videoEl.src = `videos/${encodeURI(filename)}`;
 	videoEl.controls = false;
 	videoEl.loop = false;
-	titleEl.textContent = filename;
 	
-	// W prawdziwym badaniu przyciski oceny są zawsze widoczne
+	if (item.isFinal) {
+		// Final (thank-you) clip — ukryj przyciski ocen i po zakończeniu pokaż ekran podziękowania
+		ratingButtonsRow.style.display = 'none';
+		titleEl.textContent = 'Dziękujemy — krótki film na zakończenie';
+		lockRatingUI();
+		videoEl.onended = () => {
+			showThanks();
+		};
+		videoEl.play().catch(() => {});
+		return;
+	}
+	
+	// Normalny testowy materiał — pokaż przyciski ocen i odblokuj UI
 	ratingButtonsRow.style.display = 'flex';
 	unlockRatingUI(); // Odblokuj przyciski
 	ratingLocked = false;

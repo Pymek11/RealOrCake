@@ -106,10 +106,6 @@ body{
 	gap:18px;
 }
 
-#practice-player:not(.show) #practice-start-btn {
-	display:none;
-}
-
 #practice-start-btn {
 	min-width:200px;
 	padding:12px 24px;
@@ -120,10 +116,6 @@ body{
 #practice-video-section {
 	width:100%;
 	display:none;
-}
-
-#practice-video-section[style*="display: block"] {
-	display: block !important;
 }
 
 #player-card{
@@ -154,8 +146,6 @@ body{
 
 #video-info, #practice-video-info{margin-top:12px}
 
-#video-title, #practice-video-title{display:none;margin:0;font-size:18px}
-
 #rating-row, #practice-rating-row{
 	display:flex;
 	flex-direction:column;
@@ -166,34 +156,37 @@ body{
 	text-align:center;
 }
 
-#rating-prompt, #practice-rating-prompt{
-	margin:0;
-	font-weight:600;
-	font-size:16px;
-}
-
 #rating-buttons, #practice-rating-buttons{
-	display:none;
-	gap:8px;
-	flex-wrap:wrap;
-	justify-content:center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .rate-btn{
 	background:#1a2226;
 	color:var(--text);
 	border:1px solid rgba(255,255,255,0.04);
-	padding:10px 12px;
+	padding:10px 15px;
 	border-radius:6px;
 	cursor:pointer;
 	font-weight:600;
-	min-width:44px;
+	min-width:80px;
 	font-size:14px;
+	flex: 0 0 auto;
 }
 
 .rate-btn:hover{background:#232a2d}
 
 .rate-btn:active{transform:scale(0.98)}
+
+#rating-buttons span,
+#practice-rating-buttons span {
+	font-weight: bold;
+	font-size: 14px;
+	white-space: nowrap;
+}
 
 .hidden{display:none}
 
@@ -214,10 +207,10 @@ body{
 	opacity: 0.5;
 	cursor: not-allowed;
 	filter: grayscale(50%);
-	pointer-events: none; /* dodatkowo blokuje interakcje */
+	pointer-events: none;
 }
 
-/* Nie zmieniaj tła na hover gdy przycisk jest disabled */
+/* Do not change background on hover when button is disabled */
 .rate-btn[disabled]:hover{
 	background: #1a2226;
 }

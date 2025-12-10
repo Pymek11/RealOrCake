@@ -92,12 +92,12 @@ app.get("/api/practice-videos", (req, res) => {
   }
 });
 
+// Stream video with range support
 app.get("/api/stream/:dir/:filename", (req, res) => {
   try {
-    const dir = req.params.dir; // 'videos' lub 'video_test' lub 'video_last_test'
+    const dir = req.params.dir;
     const videoPath = path.resolve(`./${dir}`, req.params.filename);
     
-    // Security check - prevent directory traversal
     if (!videoPath.startsWith(path.resolve(`./${dir}`))) {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -106,7 +106,6 @@ app.get("/api/stream/:dir/:filename", (req, res) => {
     const fileSize = stat.size;
     const range = req.headers.range;
 
-    // Nagłówki zabezpieczające
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
@@ -163,7 +162,6 @@ app.post("/api/rate", async (req, res) => {
     const ts = new Date().toISOString();
     const connection = await pool.getConnection();
 
-    // Insert rating
     await connection.execute(
       'INSERT INTO ratings (timestamp, videoId, rating, uuid, resolution) VALUES (?, ?, ?, ?, ?)',
       [ts, videoId, Number(rating), uuid, resolution || null]
@@ -181,6 +179,7 @@ app.post("/api/rate", async (req, res) => {
 // Serve static files
 app.use(express.static(path.resolve("./public")));
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log('Using MySQL database');

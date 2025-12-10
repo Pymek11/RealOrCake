@@ -35,22 +35,20 @@ const NUM_TEST_VIDEOS = 20;
 const LAST_VIDEO_FILENAME = 'VideoLast_Ai.mp4';
 const LAST_VIDEO_DIR = 'video_last_test'; 
 
+// Create or retrieve user UUID
 async function createUser(){
 	try{
-		// Check if UUID is in URL
 		const urlParams = new URLSearchParams(window.location.search);
 		const uuidFromUrl = urlParams.get('UUID');
 		
 		const storedUUID = localStorage.getItem('roc_uuid');
 
-		// If UUID in URL, use that; otherwise use stored UUID; otherwise generate new
 		if (uuidFromUrl) {
 			currentUUID = uuidFromUrl;
 			localStorage.setItem('roc_uuid', uuidFromUrl);
 		} else if (storedUUID) {
 			currentUUID = storedUUID;
 		} else {
-			// Generate new UUID
 			const res = await fetch('/api/user',{method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({})});
 			if(!res.ok) throw new Error('user create failed');
 			const data = await res.json();
@@ -63,6 +61,7 @@ async function createUser(){
 	}
 }
 
+// Fetch video list from server
 async function fetchVideos() {
 	try {
 		const res = await fetch("/api/videos");
@@ -75,6 +74,7 @@ async function fetchVideos() {
 	}
 }
 
+// Fetch practice videos from server
 async function fetchPracticeVideos() {
 	try {
 		const res = await fetch("/api/practice-videos");
@@ -86,28 +86,61 @@ async function fetchPracticeVideos() {
 	}
 }
 
+// Build rating buttons
 function buildRatingButtons() {
-	ratingButtonsRow.innerHTML = "";
-	for (let i = 1; i <= 5; i++) {
-		const b = document.createElement('button');
-		b.className = 'rate-btn scale-btn';
-		b.textContent = String(i);
-		b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, false); });
-		ratingButtonsRow.appendChild(b);
-	}
+    ratingButtonsRow.innerHTML = "";
+    
+    const aiLabel = document.createElement('span');
+    aiLabel.textContent = 'AI';
+    aiLabel.style.fontWeight = 'bold';
+    aiLabel.style.marginRight = '10px';
+    ratingButtonsRow.appendChild(aiLabel);
+    
+    const percentages = ['100%', '75%/25%', '50%/50%', '25%/75%', '100%'];
+    
+    for (let i = 1; i <= 5; i++) {
+        const b = document.createElement('button');
+        b.className = 'rate-btn scale-btn';
+        b.textContent = percentages[i - 1];
+        b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, false); });
+        ratingButtonsRow.appendChild(b);
+    }
+    
+    const realLabel = document.createElement('span');
+    realLabel.textContent = 'REAL';
+    realLabel.style.fontWeight = 'bold';
+    realLabel.style.marginLeft = '10px';
+    ratingButtonsRow.appendChild(realLabel);
 }
 
+// Build practice rating buttons
 function buildPracticeRatingButtons() {
-	practiceRatingButtonsRow.innerHTML = "";
-	for (let i = 1; i <= 5; i++) {
-		const b = document.createElement('button');
-		b.className = 'rate-btn scale-btn';
-		b.textContent = String(i);
-		b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, true); });
-		practiceRatingButtonsRow.appendChild(b);
-	}
+    practiceRatingButtonsRow.innerHTML = "";
+    
+    const aiLabel = document.createElement('span');
+    aiLabel.textContent = 'AI';
+    aiLabel.style.fontWeight = 'bold';
+    aiLabel.style.marginRight = '10px';
+    practiceRatingButtonsRow.appendChild(aiLabel);
+    
+    const percentages = ['100%', '75%/25%', '50%/50%', '25%/75%', '100%'];
+    
+    for (let i = 1; i <= 5; i++) {
+        const b = document.createElement('button');
+        b.className = 'rate-btn scale-btn';
+        b.textContent = percentages[i - 1];
+        b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, true); });
+        practiceRatingButtonsRow.appendChild(b);
+    }
+    
+    const realLabel = document.createElement('span');
+    realLabel.textContent = 'REAL';
+    realLabel.style.fontWeight = 'bold';
+    realLabel.style.marginLeft = '10px';
+    practiceRatingButtonsRow.appendChild(realLabel);
 }
 
+// Submit rating to server
 async function submitRating(value, isPractice) {
 	const item = !isPractice ? videos[currentIndex] : null;
 	const videoPath = isPractice ? (practiceVideos[0] || null) : (item ? `${item.dir}/${item.filename}` : null);
@@ -116,9 +149,7 @@ async function submitRating(value, isPractice) {
 		console.log('Sending rating ->', { video: videoPath, uuid: currentUUID, rating: value, isPractice });
 		
 		if (!isPractice) {
-			// Extract only filename without path
 			const videoName = videoPath ? videoPath.split('/').pop() : null;
-			// Include 'final' flag when current item is the final clip
             const payload = { videoId: videoName, rating: value, uuid: currentUUID, resolution: currentResolution };
 			if (item && item.isFinal) payload.final = true;
 			await fetch('/api/rate', {
@@ -152,11 +183,13 @@ async function submitRating(value, isPractice) {
 	}, RATING_SHOW_DELAY);
 }
 
+// Show thank you screen
 function showThanks() {
 	playerCard.classList.add("hidden");
 	thanksScreen.classList.remove("hidden");
 }
 
+// Shuffle array utility
 function shuffleArray(a) {
 	for (let i = a.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
@@ -164,6 +197,7 @@ function shuffleArray(a) {
 	}
 }
 
+// Check if file exists on server
 async function checkFileExists(filePath) {
   try {
     const [dir, filename] = filePath.split('/');
@@ -175,18 +209,14 @@ async function checkFileExists(filePath) {
   }
 }
 
+// Prepare playlist with random videos and final clip
 async function preparePlaylist(allVideos) {
-	// allVideos: array of filenames (strings) from server
 	let pool = Array.isArray(allVideos) ? allVideos.slice() : [];
-	// Remove any occurrences of the last video filename from pool to avoid duplication
 	pool = pool.filter(f => f !== LAST_VIDEO_FILENAME);
-	// Shuffle pool and take first NUM_TEST_VIDEOS
 	shuffleArray(pool);
 	const count = Math.min(NUM_TEST_VIDEOS, pool.length);
 	const selected = pool.slice(0, count);
-	// Build videos array as objects with directory info
 	videos = selected.map(f => ({ filename: f, dir: 'videos', isFinal: false }));
-	// Check if the designated last video exists on server and append as final entry
 	const finalUrl = `${LAST_VIDEO_DIR}/${encodeURI(LAST_VIDEO_FILENAME)}`;
 	if (await checkFileExists(finalUrl)) {
 		videos.push({ filename: LAST_VIDEO_FILENAME, dir: LAST_VIDEO_DIR, isFinal: true });
@@ -196,6 +226,7 @@ async function preparePlaylist(allVideos) {
 	}
 }
 
+// Load current video
 function loadCurrent() {
 	const item = videos[currentIndex];
 	if (!item) return;
@@ -207,7 +238,6 @@ function loadCurrent() {
 	videoEl.loop = false;
 	
 	if (item.isFinal) {
-		// Final clip 
 		ratingButtonsRow.style.display = 'flex';
 		ratingLocked = false;
 		videoEl.onended = () => {
@@ -225,6 +255,7 @@ function loadCurrent() {
 	videoEl.play().catch(() => {});
 }
 
+// Load practice video
 function loadPracticeVideo() {
 	if (!practiceVideos || practiceVideos.length === 0) return;
 	const filename = practiceVideos[0];
@@ -236,7 +267,6 @@ function loadPracticeVideo() {
 
 	practiceRatingButtonsRow.style.display = 'none';
 	
-	// Show rating buttons when video ends
 	practiceVideoEl.onended = () => {
         setTimeout(() => {
             practiceRatingButtonsRow.style.display = 'flex';
@@ -247,7 +277,7 @@ function loadPracticeVideo() {
 	practiceVideoEl.play().catch(() => {});
 }
 
-// Przycisk do testu praktycznego
+// Handle practice button click
 practiceBtnEl?.addEventListener("click", async () => {
 	try { startScreen.remove(); } catch (e) {}
 	practiceScreen.classList.remove("hidden");
@@ -264,28 +294,26 @@ practiceBtnEl?.addEventListener("click", async () => {
 	buildPracticeRatingButtons();
 });
 
-// Przycisk rozpoczęcia testu praktycznego
+// Handle practice start button click
 practiceStartBtnEl?.addEventListener("click", () => {
 	practiceStartBtnEl.style.display = "none";
 	practiceVideoSectionEl.style.display = "block";
 	loadPracticeVideo();
 });
 
-// Event listener na koniec practice video
+// Handle practice video ended event
 practiceVideoEl?.addEventListener('ended', () => {
 	try { practiceVideoEl.style.opacity = '0'; } catch (e) {}
 	try { practiceVideoEl.style.transition = 'opacity 240ms ease'; } catch (e) {}
 });
 
-// Przejście do pełnego testu po ocenie practice
+// Continue to main test after practice
 function continuToTest() {
 	practiceScreen.remove();
 	
-	// Pokaż ekran przejściowy
 	const transitionScreen = document.getElementById("transition-screen");
 	transitionScreen.classList.remove("hidden");
 	
-	// Po 3 sekundach przejdź do głównego testu
 	setTimeout(async () => {
 		await fetchVideos();
 		transitionScreen.remove();
@@ -297,16 +325,19 @@ function continuToTest() {
 	}, 3000);
 }
 
+// Prevent seeking
 videoEl.addEventListener("seeking", (e) => {
     e.preventDefault();
     videoEl.currentTime = 0;
 });
 
+// Prevent seeking in practice video
 practiceVideoEl.addEventListener("seeking", (e) => {
     e.preventDefault();
     practiceVideoEl.currentTime = 0;
 });
 
+// Handle video ended event
 videoEl.addEventListener('ended', () => {
 	try {
 		videoEl.pause();
@@ -317,6 +348,7 @@ videoEl.addEventListener('ended', () => {
 	} catch (e) {}
 });
 
+// Block certain key actions
 window.addEventListener("keydown", (e) => {
 	const blocked = [" ", "Spacebar", "ArrowLeft", "ArrowRight", "MediaPlayPause", "k", "K"];
 	if (blocked.includes(e.key)) {

@@ -64,91 +64,78 @@ async function initializeDatabase() {
 // Initialize on startup
 initializeDatabase();
 
-// Serve a list of videos from the ./videos directory
+// Get list of videos from /videos directory
 app.get("/api/videos", (req, res) => {
   try {
-    const videosDir = path.resolve("./videos");
-
-    function walkDir(dir) {
-      let results = [];
-      const entries = readdirSync(dir, { withFileTypes: true });
-      for (const ent of entries) {
-        const full = path.join(dir, ent.name);
-        if (ent.isDirectory()) {
-          results = results.concat(walkDir(full));
-        } else if (ent.isFile()) {
-          if (/\.(mp4|webm|ogg|mov)$/i.test(ent.name)) {
-            results.push(path.relative(videosDir, full).split(path.sep).join('/'));
-          }
-        }
-      }
-      return results;
-    }
-
-    let files = [];
-    try {
-      files = walkDir(videosDir);
-    } catch (err) {
-      console.error("Error walking videos directory:", err);
-      return res.json([]);
-    }
-
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
-    shuffle(files);
-
+    const videoDir = path.resolve("./videos");
+    const files = readdirSync(videoDir).filter(f => 
+      f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.mov')
+    );
     res.json(files);
   } catch (err) {
-    console.error("Error reading videos directory:", err);
+    console.error("Error reading videos:", err);
     res.status(500).json({ message: "Unable to read videos" });
   }
 });
 
-// Serve practice videos from ./video_test directory
+// Get list of practice videos from /video_test directory
 app.get("/api/practice-videos", (req, res) => {
   try {
-    const videosDir = path.resolve("./video_test");
-
-    function walkDir(dir) {
-      let results = [];
-      const entries = readdirSync(dir, { withFileTypes: true });
-      for (const ent of entries) {
-        const full = path.join(dir, ent.name);
-        if (ent.isDirectory()) {
-          results = results.concat(walkDir(full));
-        } else if (ent.isFile()) {
-          if (/\.(mp4|webm|ogg|mov)$/i.test(ent.name)) {
-            results.push(path.relative(videosDir, full).split(path.sep).join('/'));
-          }
-        }
-      }
-      return results;
-    }
-
-    let files = [];
-    try {
-      files = walkDir(videosDir);
-    } catch (err) {
-      console.error("Error walking video_test directory:", err);
-      return res.json([]);
-    }
-
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
-    shuffle(files);
-
+    const videoDir = path.resolve("./video_test");
+    const files = readdirSync(videoDir).filter(f => 
+      f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.mov')
+    );
     res.json(files);
   } catch (err) {
-    console.error("Error reading video_test directory:", err);
+    console.error("Error reading practice videos:", err);
     res.status(500).json({ message: "Unable to read practice videos" });
+  }
+});
+
+app.get("/api/stream/:dir/:videoPath(*)", (req, res) => {
+  try {
+    const dir = req.params.dir; // 'videos' lub 'video_test' lub 'video_last_test'
+    const videoPath = path.resolve(`./${dir}`, req.params.videoPath);
+    
+    // Security check - prevent directory traversal
+    if (!videoPath.startsWith(path.resolve(`./${dir}`))) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const stat = fs.statSync(videoPath);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+
+    // Nagłówki zabezpieczające
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
+    if (range) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = (end - start) + 1;
+
+      res.writeHead(206, {
+        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+        "Content-Length": chunksize,
+        "Content-Type": "video/mp4",
+        "Content-Security-Policy": "default-src 'none'"
+      });
+      fs.createReadStream(videoPath, { start, end }).pipe(res);
+    } else {
+      res.writeHead(200, {
+        "Content-Length": fileSize,
+        "Content-Type": "video/mp4",
+        "Content-Security-Policy": "default-src 'none'"
+      });
+      fs.createReadStream(videoPath).pipe(res);
+    }
+  } catch (err) {
+    console.error("Error streaming video:", err);
+    res.status(404).json({ message: "Video not found" });
   }
 });
 
@@ -192,7 +179,7 @@ app.post("/api/rate", async (req, res) => {
 });
 
 // Serve static files
-app.use(express.static(path.resolve(".")));
+app.use(express.static(path.resolve("./public")));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

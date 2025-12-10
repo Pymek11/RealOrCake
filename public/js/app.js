@@ -192,13 +192,13 @@ function shuffleArray(a) {
 	}
 }
 
-async function checkFileExists(path) {
-	try {
-		const res = await fetch(path, { method: 'HEAD' });
-		return res.ok;
-	} catch (e) {
-		return false;
-	}
+async function checkFileExists(filePath) {
+  try {
+    const res = await fetch(`/api/stream/${filePath}`, { method: 'HEAD' });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 async function preparePlaylist(allVideos) {
@@ -228,7 +228,7 @@ function loadCurrent() {
 	const filename = item.filename;
 	if (!filename) return;
 	try { videoEl.style.visibility = 'visible'; videoEl.style.display = ''; } catch (e) {}
-	videoEl.src = `${item.dir}/${encodeURI(filename)}`;
+	videoEl.src = `/api/stream/${item.dir}/${encodeURI(filename)}`;
 	videoEl.controls = false;
 	videoEl.loop = false;
 	
@@ -263,7 +263,7 @@ function loadPracticeVideo() {
 	if (!practiceVideos || practiceVideos.length === 0) return;
 	const filename = practiceVideos[0];
 	try { practiceVideoEl.style.visibility = 'visible'; practiceVideoEl.style.display = ''; } catch (e) {}
-	practiceVideoEl.src = `video_test/${encodeURI(filename)}`;
+	practiceVideoEl.src = `/api/stream/video_test/${encodeURI(filename)}`;
 	practiceVideoEl.controls = false;
 	practiceVideoEl.loop = false;
 	practiceTitleEl.textContent = filename;
@@ -331,8 +331,15 @@ function continuToTest() {
 	}, 3000);
 }
 
-videoEl.addEventListener("contextmenu", (e) => e.preventDefault());
-videoEl.addEventListener("dblclick", (e) => e.preventDefault());
+videoEl.addEventListener("seeking", (e) => {
+    e.preventDefault();
+    videoEl.currentTime = 0; // Zawsze na początku
+});
+
+practiceVideoEl.addEventListener("seeking", (e) => {
+    e.preventDefault();
+    practiceVideoEl.currentTime = 0; // Zawsze na początku
+});
 
 videoEl.addEventListener('ended', () => {
 	try {

@@ -14,17 +14,15 @@ const practiceBtnEl = document.getElementById("practice-btn");
 const practiceStartBtnEl = document.getElementById("practice-start-btn");
 const practiceVideoSectionEl = document.getElementById("practice-video-section");
 
-// Checkbox zgody — odblokowuje przycisk startu
 const consentCheckbox = document.getElementById('consent-checkbox');
 if (consentCheckbox) {
-	// Ustaw stan przycisku zgodnie z checkboxem przy ładowaniu
 	try { practiceBtnEl.disabled = !consentCheckbox.checked; } catch (e) {}
 	consentCheckbox.addEventListener('change', () => {
 		try { practiceBtnEl.disabled = !consentCheckbox.checked; } catch (e) {}
 	});
 }
 
-let videos = []; // teraz przechowuje obiekty: { filename, isFinal }
+let videos = [];
 let practiceVideos = [];
 let currentIndex = 0;
 let isTestPhase = false;
@@ -32,10 +30,10 @@ const RATING_SHOW_DELAY = 500;
 let ratingLocked = false;
 let currentUUID = null;
 
-// Nowe ustawienia playlisty
-const NUM_TEST_VIDEOS = 20; // ile filmów pokazywać w teście (bez finalnej clipy)
-const LAST_VIDEO_FILENAME = 'VideoLast_Ai.mp4'; // plik odtwarzany jako ostatni
-const LAST_VIDEO_DIR = 'video_last_test'; // katalog, w którym znajduje się finalny klip
+
+const NUM_TEST_VIDEOS = 20;
+const LAST_VIDEO_FILENAME = 'VideoLast_Ai.mp4';
+const LAST_VIDEO_DIR = 'video_last_test'; 
 
 async function createUser(){
 	try{
@@ -117,7 +115,6 @@ async function submitRating(value, isPractice) {
 	try {
 		console.log('Sending rating ->', { video: videoPath, uuid: currentUUID, rating: value, isPractice });
 		
-		// Nie zapisuj practice testów
 		if (!isPractice) {
 			// Extract only filename without path
 			const videoName = videoPath ? videoPath.split('/').pop() : null;
@@ -136,7 +133,6 @@ async function submitRating(value, isPractice) {
 
 	ratingButtonsRow.style.display = 'none';
 	
-	// Jeśli to practice, przejdź do pełnego testu
 	if (isPractice) {
 		setTimeout(() => {
 			continuToTest();
@@ -145,7 +141,6 @@ async function submitRating(value, isPractice) {
 	}
 	
 	currentIndex++;
-	// Jeśli osiągnięto koniec — pokaż thanks
 	if (currentIndex >= videos.length) {
 		showThanks();
 		return;
@@ -185,7 +180,7 @@ async function preparePlaylist(allVideos) {
 	let pool = Array.isArray(allVideos) ? allVideos.slice() : [];
 	// Remove any occurrences of the last video filename from pool to avoid duplication
 	pool = pool.filter(f => f !== LAST_VIDEO_FILENAME);
-	// Shuffle pool and take first NUM_TEST_VIDEOS (or fewer if not enough)
+	// Shuffle pool and take first NUM_TEST_VIDEOS
 	shuffleArray(pool);
 	const count = Math.min(NUM_TEST_VIDEOS, pool.length);
 	const selected = pool.slice(0, count);
@@ -212,25 +207,19 @@ function loadCurrent() {
 	videoEl.loop = false;
 	
 	if (item.isFinal) {
-		// Final (thank-you) clip — SHOW rating buttons so user can rate it
+		// Final clip 
 		ratingButtonsRow.style.display = 'flex';
-		// Provide a clear title/prompt that this is the final clip
-		titleEl.textContent = 'Ostatni film — prosimy o ocenę';
 		ratingLocked = false;
-		// Do NOT auto-send anything on ended; wait for user rating
 		videoEl.onended = () => {
-			// nothing special: user should still rate when ready
 		};
 		videoEl.play().catch(() => {});
 		return;
 	}
 	
-	// Normalny testowy materiał — pokaż przyciski ocen i odblokuj UI
 	ratingButtonsRow.style.display = 'flex';
 	ratingLocked = false;
 	
 	videoEl.onended = () => {
-		// W prawdziwym badaniu nic się nie zmienia po skończeniu wideo
 	};
 	
 	videoEl.play().catch(() => {});
@@ -272,8 +261,6 @@ practiceBtnEl?.addEventListener("click", async () => {
 		return;
 	}
 	
-	// Weź jeden losowy film do practice
-	practiceVideos = [practiceVideos[Math.floor(Math.random() * practiceVideos.length)]];
 	buildPracticeRatingButtons();
 });
 
@@ -312,12 +299,12 @@ function continuToTest() {
 
 videoEl.addEventListener("seeking", (e) => {
     e.preventDefault();
-    videoEl.currentTime = 0; // Zawsze na początku
+    videoEl.currentTime = 0;
 });
 
 practiceVideoEl.addEventListener("seeking", (e) => {
     e.preventDefault();
-    practiceVideoEl.currentTime = 0; // Zawsze na początku
+    practiceVideoEl.currentTime = 0;
 });
 
 videoEl.addEventListener('ended', () => {

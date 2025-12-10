@@ -31,7 +31,6 @@ let isTestPhase = false;
 const RATING_SHOW_DELAY = 500;
 let ratingLocked = false;
 let currentUUID = null;
-let userResolution = null;
 
 // Nowe ustawienia playlisty
 const NUM_TEST_VIDEOS = 20; // ile filmów pokazywać w teście (bez finalnej clipy)
@@ -66,25 +65,6 @@ async function createUser(){
 	}
 }
 
-function lockRatingUI() {
-	ratingLocked = true;
-	try {
-		for (const b of ratingButtonsRow.querySelectorAll('button')) {
-			b.disabled = true;
-			b.hidden = true;
-		}
-	} catch (e) {}
-}
-
-function unlockRatingUI() {
-	ratingLocked = false;
-	try {
-		for (const b of ratingButtonsRow.querySelectorAll('button')) {
-			b.disabled = false;
-			b.hidden = false;
-		}
-	} catch (e) {}
-}
 async function fetchVideos() {
 	try {
 		const res = await fetch("/api/videos");
@@ -115,7 +95,6 @@ function buildRatingButtons() {
 		b.className = 'rate-btn scale-btn';
 		b.textContent = String(i);
 		b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, false); });
-		if (ratingLocked) b.disabled = true;
 		ratingButtonsRow.appendChild(b);
 	}
 }
@@ -156,7 +135,7 @@ async function submitRating(value, isPractice) {
 		console.error('Failed to send rating', err);
 	}
 
-	lockRatingUI();
+	ratingButtonsRow.style.display = 'none';
 	
 	// Jeśli to practice, przejdź do pełnego testu
 	if (isPractice) {
@@ -174,7 +153,7 @@ async function submitRating(value, isPractice) {
 	}
 	setTimeout(() => {
 		try { videoEl.style.opacity = '1'; } catch (e) {}
-		unlockRatingUI();
+		ratingButtonsRow.style.display = 'flex';
 		loadCurrent();
 	}, RATING_SHOW_DELAY);
 }
@@ -193,9 +172,11 @@ function shuffleArray(a) {
 
 async function checkFileExists(filePath) {
   try {
-    const res = await fetch(`/api/stream/${filePath}`, { method: 'HEAD' });
+    const [dir, filename] = filePath.split('/');
+    const res = await fetch(`/api/stream/${dir}/${encodeURI(filename)}`, { method: 'HEAD' });
     return res.ok;
   } catch (e) {
+    console.error('File check failed:', e);
     return false;
   }
 }
@@ -236,7 +217,6 @@ function loadCurrent() {
 		ratingButtonsRow.style.display = 'flex';
 		// Provide a clear title/prompt that this is the final clip
 		titleEl.textContent = 'Ostatni film — prosimy o ocenę';
-		unlockRatingUI();
 		ratingLocked = false;
 		// Do NOT auto-send anything on ended; wait for user rating
 		videoEl.onended = () => {
@@ -248,7 +228,6 @@ function loadCurrent() {
 	
 	// Normalny testowy materiał — pokaż przyciski ocen i odblokuj UI
 	ratingButtonsRow.style.display = 'flex';
-	unlockRatingUI(); // Odblokuj przyciski
 	ratingLocked = false;
 	
 	videoEl.onended = () => {
@@ -268,13 +247,11 @@ function loadPracticeVideo() {
 	practiceTitleEl.textContent = filename;
 
 	practiceRatingButtonsRow.style.display = 'none';
-    lockRatingUI();
 	
-	// Show rating buttons when video ends (after 5 seconds)
+	// Show rating buttons when video ends
 	practiceVideoEl.onended = () => {
         setTimeout(() => {
             practiceRatingButtonsRow.style.display = 'flex';
-            unlockRatingUI();
             ratingLocked = false;
         }, RATING_SHOW_DELAY);
     };

@@ -72,7 +72,6 @@ body{
 
 .practice-card {
 	display: none;
-	/* Make practice section plain text — no card visuals */
 	background: transparent;
 	padding: 0;
 	border-radius: 0;
@@ -221,12 +220,14 @@ body{
 
 /* Responsive adjustments for smaller screens */
 @media (max-width:768px){
-	.player-area{
-		padding:16px;
-	}
 	
 	#player-card{
 		padding:12px;
+		width: 100%;
+	}
+	
+	#practice-player {
+		width: 100%;
 	}
 	
 	.start-card{
@@ -262,6 +263,7 @@ body{
 	#player-card{
 		padding:8px;
 		max-width:100%;
+		width: 100%;
 	}
 	
 	.start-card{
@@ -411,7 +413,6 @@ body{
 		max-width: 90px;
 	}
 	
-	/* Start screen in landscape */
 	#start-screen{
 		padding: 0;
 	}
@@ -445,7 +446,6 @@ body{
 		padding-left: 20px;
 	}
 	
-	/* Thanks screen in landscape */
 	#thanks-screen{
 		padding: 20px;
 	}
@@ -462,5 +462,16 @@ body{
 	#thanks-screen p {
 		font-size: 13px;
 		margin: 8px 0;
+	}
+}
+
+/* Portrait orientation for mobile devices */
+@media (orientation: portrait) {
+	#player-card {
+		width: 100%;
+	}
+	
+	#practice-player {
+		width: 100%;
 	}
 }

@@ -88,12 +88,15 @@ async function fetchPracticeVideos() {
 function buildRatingButtons() {
     const ratingContainer = document.getElementById('rating-container');
     ratingContainer.innerHTML = "";
+    ratingContainer.style.display = 'flex';
+    ratingContainer.style.alignItems = 'center';
+    ratingContainer.style.gap = '12px';
     
     // Add AI label
     const aiLabel = document.createElement('div');
-    aiLabel.style.textAlign = 'center';
     aiLabel.style.fontWeight = 'bold';
-    aiLabel.style.fontSize = '12px';
+    aiLabel.style.fontSize = '14px';
+    aiLabel.style.minWidth = '30px';
     aiLabel.textContent = 'AI';
     ratingContainer.appendChild(aiLabel);
     
@@ -117,9 +120,9 @@ function buildRatingButtons() {
     
     // Add REAL label
     const realLabel = document.createElement('div');
-    realLabel.style.textAlign = 'center';
     realLabel.style.fontWeight = 'bold';
-    realLabel.style.fontSize = '12px';
+    realLabel.style.fontSize = '14px';
+    realLabel.style.minWidth = '30px';
     realLabel.textContent = 'REAL';
     ratingContainer.appendChild(realLabel);
 }
@@ -128,12 +131,15 @@ function buildRatingButtons() {
 function buildPracticeRatingButtons() {
     const practiceRatingContainer = document.getElementById('practice-rating-container');
     practiceRatingContainer.innerHTML = "";
+    practiceRatingContainer.style.display = 'flex';
+    practiceRatingContainer.style.alignItems = 'center';
+    practiceRatingContainer.style.gap = '12px';
     
     // Add AI label
     const aiLabel = document.createElement('div');
-    aiLabel.style.textAlign = 'center';
     aiLabel.style.fontWeight = 'bold';
-    aiLabel.style.fontSize = '12px';
+    aiLabel.style.fontSize = '14px';
+    aiLabel.style.minWidth = '30px';
     aiLabel.textContent = 'AI';
     practiceRatingContainer.appendChild(aiLabel);
     
@@ -157,9 +163,9 @@ function buildPracticeRatingButtons() {
     
     // Add REAL label
     const realLabel = document.createElement('div');
-    realLabel.style.textAlign = 'center';
     realLabel.style.fontWeight = 'bold';
-    realLabel.style.fontSize = '12px';
+    realLabel.style.fontSize = '14px';
+    realLabel.style.minWidth = '30px';
     realLabel.textContent = 'REAL';
     practiceRatingContainer.appendChild(realLabel);
 }

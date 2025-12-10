@@ -106,7 +106,6 @@ function buildPracticeRatingButtons() {
 		b.className = 'rate-btn scale-btn';
 		b.textContent = String(i);
 		b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, true); });
-		if (ratingLocked) b.disabled = true;
 		practiceRatingButtonsRow.appendChild(b);
 	}
 }

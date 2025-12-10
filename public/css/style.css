@@ -340,17 +340,17 @@ body{
 	
 	.player-area{
 		padding: 8px;
-		max-width: 95vw;
-		width: 95vw;
+		max-width: 90vw;
+		width: fit-content;
 		height: auto;
 		justify-content: center;
 	}
 	
 	#player-card, #practice-player{
 		padding: 8px;
-		max-width: 100%;
+		max-width: 90vw;
 		margin: 0 auto;
-		width: 100%;
+		width: fit-content;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -376,13 +376,14 @@ body{
 		gap: 6px;
 		flex-wrap: nowrap;
 		justify-content: center;
+		flex-direction: row;
 	}
 	
 	#rating-buttons span,
 	#practice-rating-buttons span {
 		font-size: 12px;
 		padding: 0 4px;
-		display: inline;
+		display: none;
 	}
 	
 	.rate-btn{

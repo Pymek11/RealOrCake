@@ -97,7 +97,7 @@ function buildRatingButtons() {
     aiLabel.style.fontWeight = 'bold';
     aiLabel.style.fontSize = '14px';
     aiLabel.style.minWidth = '30px';
-    aiLabel.textContent = 'AI';
+    aiLabel.textContent = 'Ai';
     ratingContainer.appendChild(aiLabel);
     
     // Create buttons wrapper
@@ -123,7 +123,7 @@ function buildRatingButtons() {
     realLabel.style.fontWeight = 'bold';
     realLabel.style.fontSize = '14px';
     realLabel.style.minWidth = '30px';
-    realLabel.textContent = 'REAL';
+    realLabel.textContent = 'Real';
     ratingContainer.appendChild(realLabel);
 }
 
@@ -140,7 +140,7 @@ function buildPracticeRatingButtons() {
     aiLabel.style.fontWeight = 'bold';
     aiLabel.style.fontSize = '14px';
     aiLabel.style.minWidth = '30px';
-    aiLabel.textContent = 'AI';
+    aiLabel.textContent = 'Ai';
     practiceRatingContainer.appendChild(aiLabel);
     
     // Create buttons wrapper
@@ -166,7 +166,7 @@ function buildPracticeRatingButtons() {
     realLabel.style.fontWeight = 'bold';
     realLabel.style.fontSize = '14px';
     realLabel.style.minWidth = '30px';
-    realLabel.textContent = 'REAL';
+    realLabel.textContent = 'Real';
     practiceRatingContainer.appendChild(realLabel);
 }
 
@@ -295,12 +295,13 @@ function loadPracticeVideo() {
 	practiceVideoEl.controls = false;
 	practiceVideoEl.loop = false;
 
-	practiceRatingButtonsRow.style.display = 'none';
+	const practiceRatingRow = document.getElementById('practice-rating-row');
+	practiceRatingRow.style.display = 'none';
 	ratingLocked = true;
 	
 	practiceVideoEl.onended = () => {
         setTimeout(() => {
-            practiceRatingButtonsRow.style.display = 'flex';
+            practiceRatingRow.style.display = 'flex';
             ratingLocked = false;
         }, RATING_SHOW_DELAY);
     };

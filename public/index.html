@@ -19,14 +19,14 @@
           <p>Będziesz oceniać <strong>20 krótkich filmów</strong> (każdy trwa ~5 sekund).</p>
           
           <h3>Jak oceniać?</h3>
-          <p>Oceń każdy film na skali od <strong>0% REAL</strong> (całkowicie wygenerowany przez AI) do <strong>100% REAL</strong> (rzeczywisty - nagrany lub stworzony przez człowieka).</p>
+          <p>Oceń każdy film na skali od <strong>0% REAL</strong> (na pewno wygenerowany przez AI) do <strong>100% REAL</strong> (na pewno rzeczywisty - nagrany lub stworzony przez człowieka).</p>
           
           <div style="background: #404040; padding: 15px; border-radius: 8px; margin: 15px 0;">
-            <p style="margin: 5px 0;"><strong>0%</strong> — Film całkowicie wygenerowany przez AI</p>
+            <p style="margin: 5px 0;"><strong>0%</strong> — Film na pewno wygenerowany przez AI</p>
             <p style="margin: 5px 0;"><strong>25%</strong> — Raczej wygenerowany przez AI</p>
             <p style="margin: 5px 0;"><strong>50%</strong> — Nie jestem pewnien</p>
             <p style="margin: 5px 0;"><strong>75%</strong> — Raczej rzeczywisty</p>
-            <p style="margin: 5px 0;"><strong>100%</strong> — Film całkowicie rzeczywisty</p>
+            <p style="margin: 5px 0;"><strong>100%</strong> — Film na pewno rzeczywisty</p>
           </div>
           
           <h3>Ważne zasady:</h3>
@@ -56,6 +56,10 @@
               <video id="practice-video" playsinline></video>
             </div>
             <div id="practice-rating-row">
+              <div style="text-align: center; margin-bottom: 6px;">
+                <span style="font-weight: bold; margin-right: 8px;">AI</span>
+                <span style="font-weight: bold; margin-left: 8px;">REAL</span>
+              </div>
               <div id="practice-rating-buttons" aria-label="rating buttons"></div>
             </div>
           </div>
@@ -68,6 +72,10 @@
         </div>
 
         <div id="rating-row">
+          <div style="text-align: center; margin-bottom: 6px;">
+            <span style="font-weight: bold; margin-right: 8px;">AI</span>
+            <span style="font-weight: bold; margin-left: 8px;">REAL</span>
+          </div>
           <div id="rating-buttons" aria-label="rating buttons"></div>
         </div>
       </div>

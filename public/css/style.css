@@ -338,6 +338,14 @@ body{
 		display: none;
 	}
 	
+	#practice-screen {
+		display: none !important;
+	}
+	
+	.practice-card h2 {
+		display: none;
+	}
+	
 	.player-area{
 		padding: 8px;
 		max-width: 90vw;

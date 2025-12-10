@@ -88,12 +88,6 @@ async function fetchPracticeVideos() {
 function buildRatingButtons() {
     ratingButtonsRow.innerHTML = "";
     
-    const aiLabel = document.createElement('span');
-    aiLabel.textContent = 'AI';
-    aiLabel.style.fontWeight = 'bold';
-    aiLabel.style.marginRight = '10px';
-    ratingButtonsRow.appendChild(aiLabel);
-    
     const percentages = ['0%', '25%', '50%', '75%', '100%'];
     
     for (let i = 1; i <= 5; i++) {
@@ -103,23 +97,11 @@ function buildRatingButtons() {
         b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, false); });
         ratingButtonsRow.appendChild(b);
     }
-    
-    const realLabel = document.createElement('span');
-    realLabel.textContent = 'REAL';
-    realLabel.style.fontWeight = 'bold';
-    realLabel.style.marginLeft = '10px';
-    ratingButtonsRow.appendChild(realLabel);
 }
 
 // Build practice rating buttons
 function buildPracticeRatingButtons() {
     practiceRatingButtonsRow.innerHTML = "";
-    
-    const aiLabel = document.createElement('span');
-    aiLabel.textContent = 'AI';
-    aiLabel.style.fontWeight = 'bold';
-    aiLabel.style.marginRight = '10px';
-    practiceRatingButtonsRow.appendChild(aiLabel);
     
     const percentages = ['0%', '25%', '50%', '75%', '100%'];
     
@@ -130,12 +112,6 @@ function buildPracticeRatingButtons() {
         b.addEventListener('click', () => { if (!ratingLocked) submitRating(i, true); });
         practiceRatingButtonsRow.appendChild(b);
     }
-    
-    const realLabel = document.createElement('span');
-    realLabel.textContent = 'REAL';
-    realLabel.style.fontWeight = 'bold';
-    realLabel.style.marginLeft = '10px';
-    practiceRatingButtonsRow.appendChild(realLabel);
 }
 
 // Submit rating to server

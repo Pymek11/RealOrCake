@@ -199,6 +199,29 @@ body{
 	font-size:28px;
 }
 
+.thanks-card {
+	background: var(--card);
+	padding: 40px 30px;
+	border-radius: 12px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+	text-align: center;
+	max-width: 500px;
+	margin: auto;
+}
+
+.thanks-card h2 {
+	margin-top: 0;
+	margin-bottom: 20px;
+	font-size: 24px;
+	color: var(--text);
+}
+
+.thanks-card p {
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--text);
+}
+
 /* Responsive adjustments for smaller screens */
 @media (max-width:768px){
 	.player-area{

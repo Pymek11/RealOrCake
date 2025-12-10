@@ -165,9 +165,9 @@ body{
 }
 
 .rate-btn{
-	background:#1a2226;
-	color:var(--text);
-	border:1px solid rgba(255,255,255,0.04);
+	background:#404040;
+	color:#E0E0E0;
+	border:1px solid #808080;
 	padding:10px 15px;
 	border-radius:6px;
 	cursor:pointer;

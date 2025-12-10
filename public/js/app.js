@@ -94,7 +94,7 @@ function buildRatingButtons() {
     aiLabel.style.marginRight = '10px';
     ratingButtonsRow.appendChild(aiLabel);
     
-    const percentages = ['100%', '75%/25%', '50%/50%', '25%/75%', '100%'];
+    const percentages = ['0%', '25%', '50%', '75%', '100%'];
     
     for (let i = 1; i <= 5; i++) {
         const b = document.createElement('button');
@@ -121,7 +121,7 @@ function buildPracticeRatingButtons() {
     aiLabel.style.marginRight = '10px';
     practiceRatingButtonsRow.appendChild(aiLabel);
     
-    const percentages = ['100%', '75%/25%', '50%/50%', '25%/75%', '100%'];
+    const percentages = ['0%', '25%', '50%', '75%', '100%'];
     
     for (let i = 1; i <= 5; i++) {
         const b = document.createElement('button');

@@ -110,6 +110,7 @@ body{
 
 #practice-video-section {
 	width:100%;
+	display:none;
 }
 
 #player-card{

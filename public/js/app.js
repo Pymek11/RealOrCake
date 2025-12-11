@@ -33,6 +33,29 @@ const NUM_TEST_VIDEOS = 20;
 const LAST_VIDEO_FILENAME = 'VideoLast_Ai.mp4';
 const LAST_VIDEO_DIR = 'video_last_test'; 
 
+function lockRatingUI() {
+    ratingLocked = true;
+
+    const mainContainer = document.getElementById('rating-container');
+    const practiceContainer = document.getElementById('practice-rating-container');
+    
+    if (mainContainer) mainContainer.style.display = 'none';
+    
+    if (practiceContainer) practiceContainer.style.display = 'none';
+}
+
+
+function unlockRatingUI() {
+    ratingLocked = false;
+
+    const mainContainer = document.getElementById('rating-container');
+    const practiceContainer = document.getElementById('practice-rating-container');
+
+    // Pokaż główne
+    if (mainContainer) mainContainer.style.display = 'flex';
+    
+    if (practiceContainer) practiceContainer.style.display = 'flex';
+}
 // Create or retrieve user UUID
 async function createUser(){
 	try{
@@ -86,7 +109,8 @@ async function fetchPracticeVideos() {
 
 // Build rating buttons
 function buildRatingButtons() {
-    const ratingContainer = document.getElementById('rating-container');
+	const ratingContainer = document.getElementById('rating-container');
+	if (!ratingContainer) return;
     ratingContainer.innerHTML = "";
     ratingContainer.style.display = 'flex';
     ratingContainer.style.alignItems = 'center';
@@ -104,7 +128,6 @@ function buildRatingButtons() {
     const buttonsWrapper = document.createElement('div');
     buttonsWrapper.id = 'rating-buttons';
     buttonsWrapper.setAttribute('aria-label', 'rating buttons');
-    buttonsWrapper.style.flex = '1';
     
     const percentages = ['0%', '25%', '50%', '75%', '100%'];
     
@@ -130,10 +153,13 @@ function buildRatingButtons() {
 // Build practice rating buttons
 function buildPracticeRatingButtons() {
     const practiceRatingContainer = document.getElementById('practice-rating-container');
+	if (!practiceRatingContainer) return;
     practiceRatingContainer.innerHTML = "";
     practiceRatingContainer.style.display = 'flex';
-    practiceRatingContainer.style.alignItems = 'center';
+	practiceRatingContainer.style.alignItems = 'center';
+	practiceRatingContainer.style.justifyContent = 'center';
     practiceRatingContainer.style.gap = '12px';
+	practiceRatingContainer.style.marginTop = '12px';
     
     // Add AI label
     const aiLabel = document.createElement('div');
@@ -147,7 +173,6 @@ function buildPracticeRatingButtons() {
     const buttonsWrapper = document.createElement('div');
     buttonsWrapper.id = 'practice-rating-buttons';
     buttonsWrapper.setAttribute('aria-label', 'rating buttons');
-    buttonsWrapper.style.flex = '1';
     
     const percentages = ['0%', '25%', '50%', '75%', '100%'];
     
@@ -172,6 +197,8 @@ function buildPracticeRatingButtons() {
 
 // Submit rating to server
 async function submitRating(value, isPractice) {
+	if (ratingLocked) return; 
+    lockRatingUI();
 	const item = !isPractice ? videos[currentIndex] : null;
 	const videoPath = isPractice ? (practiceVideos[0] || null) : (item ? `${item.dir}/${item.filename}` : null);
 	const currentResolution = `${window.innerWidth}x${window.innerHeight}`;
@@ -193,15 +220,12 @@ async function submitRating(value, isPractice) {
 	}
 
 	if (isPractice) {
-		practiceRatingButtonsRow.style.display = 'none';
 		setTimeout(() => {
 			continuToTest();
 		}, 1000);
 		return;
 	}
-	
-	ratingButtonsRow.style.display = 'none';
-	
+		
 	currentIndex++;
 	if (currentIndex >= videos.length) {
 		showThanks();
@@ -209,7 +233,6 @@ async function submitRating(value, isPractice) {
 	}
 	setTimeout(() => {
 		try { videoEl.style.opacity = '1'; } catch (e) {}
-		ratingButtonsRow.style.display = 'flex';
 		loadCurrent();
 	}, RATING_SHOW_DELAY);
 }
@@ -259,6 +282,7 @@ async function preparePlaylist(allVideos) {
 
 // Load current video
 function loadCurrent() {
+	unlockRatingUI();
 	const item = videos[currentIndex];
 	if (!item) return;
 	const filename = item.filename;
@@ -269,17 +293,13 @@ function loadCurrent() {
 	videoEl.loop = false;
 	
 	if (item.isFinal) {
-		ratingButtonsRow.style.display = 'flex';
 		ratingLocked = false;
 		videoEl.onended = () => {
 		};
 		videoEl.play().catch(() => {});
 		return;
 	}
-	
-	ratingButtonsRow.style.display = 'flex';
-	ratingLocked = false;
-	
+		
 	videoEl.onended = () => {
 	};
 	
@@ -288,6 +308,7 @@ function loadCurrent() {
 
 // Load practice video
 function loadPracticeVideo() {
+	unlockRatingUI();
 	if (!practiceVideos || practiceVideos.length === 0) return;
 	const filename = practiceVideos[0];
 	try { practiceVideoEl.style.visibility = 'visible'; practiceVideoEl.style.display = ''; } catch (e) {}
@@ -296,9 +317,7 @@ function loadPracticeVideo() {
 	practiceVideoEl.loop = false;
 
 	const practiceRatingRow = document.getElementById('practice-rating-row');
-	practiceRatingRow.style.display = 'flex';
-	ratingLocked = false;
-	
+
 	practiceVideoEl.play().catch(() => {});
 }
 

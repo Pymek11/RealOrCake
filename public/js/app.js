@@ -296,15 +296,8 @@ function loadPracticeVideo() {
 	practiceVideoEl.loop = false;
 
 	const practiceRatingRow = document.getElementById('practice-rating-row');
-	practiceRatingRow.style.display = 'none';
-	ratingLocked = true;
-	
-	practiceVideoEl.onended = () => {
-        setTimeout(() => {
-            practiceRatingRow.style.display = 'flex';
-            ratingLocked = false;
-        }, RATING_SHOW_DELAY);
-    };
+	practiceRatingRow.style.display = 'flex';
+	ratingLocked = false;
 	
 	practiceVideoEl.play().catch(() => {});
 }

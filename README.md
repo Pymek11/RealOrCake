@@ -5,7 +5,6 @@
 ## Project Scope
 
 * **Objective:** Our primary goal was to examine human perception of reality and determine whether the boundary between generated videos and authentic footage has blurred to the point of indistinguishability compared to previous years.
-* **Supervision:** This project was developed over eleven weeks under the supervision of **Dr. Eng. Jarosław Bułat** as part of our AI exploration course.
 * **Iterative Design:** Throughout the development process, both the video dataset and the User Interface (UI) underwent multiple iterations to ensure optimal testing conditions.
 * **Standards:** We adhered to **ITU-R BT.500** guidelines for UI design and incorporated peer feedback to curate the video samples.
 
